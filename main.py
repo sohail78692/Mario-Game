@@ -3,7 +3,7 @@ import sys
 
 pygame.init()
 
-# Window setup
+# Window
 WIDTH = 800
 HEIGHT = 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -30,13 +30,26 @@ mario_frames = [
 current_frame = 0
 frame_delay = 0
 
-# Load sounds
+# Sounds
 jump_sound = pygame.mixer.Sound("jump.mp3")
 coin_sound = pygame.mixer.Sound("coin.mp3")
 game_over_sound = pygame.mixer.Sound("gameover.mp3")
 
-# Load heart image
+# UI assets
 heart_img = pygame.transform.scale(pygame.image.load("heart.png"), (30, 30))
+
+# Enemy & mushroom images
+enemy_width = 40
+enemy_height = 40
+goomba_img = pygame.transform.scale(pygame.image.load("goomba.png"), (enemy_width, enemy_height))
+mushroom_img = pygame.transform.scale(pygame.image.load("mushroom.png"), (30, 30))
+
+# Fonts
+font = pygame.font.SysFont("Arial", 40)
+small_font = pygame.font.SysFont("Arial", 30)
+
+# Game states
+game_state = "start"       # "start", "play", "game_over"
 
 # Camera
 camera_x = 0
@@ -44,7 +57,7 @@ camera_x = 0
 # Ground
 ground_rect = pygame.Rect(0, 560, 3000, 40)
 
-# Moving platforms: [x, y, width, height, speed, direction, min_x, max_x]
+# Moving platforms [x, y, width, height, speed, direction, min_x, max_x]
 platforms = [
     [200, 450, 120, 20, 0, 0, 200, 200],
     [500, 350, 120, 20, 2, 1, 500, 700],
@@ -53,15 +66,12 @@ platforms = [
     [1700, 350, 120, 20, 0, 0, 1700, 1700]
 ]
 
-# Enemies: [x, y, speed, direction]
+# Enemies [x, y, speed, dir]
 enemies = [
     [600, 520, 2, 1],
     [1100, 520, 2, -1],
     [1600, 520, 3, 1]
 ]
-
-enemy_width = 40
-enemy_height = 40
 
 # Coins
 coins = [
@@ -72,55 +82,74 @@ coins = [
     pygame.Rect(1750, 300, 20, 20)
 ]
 
-score = 0
-font = pygame.font.SysFont("Arial", 30)
+# Power-ups
+mushrooms = [pygame.Rect(750, 520, 30, 30)]
+stars = [pygame.Rect(1500, 520, 30, 30)]
+mario_big = False
+invincible = False
+invincible_timer = 0
 
-# Lives system
+# HUD stats
+score = 0
 lives = 3
-game_over = False
 
 # Win flag
 flag_rect = pygame.Rect(2800, 420, 30, 140)
 won = False
 
-# ================= GAME LOOP ==================
+# ================= MAIN LOOP ==================
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
-    # ---------- GAME OVER SCREEN ----------
-    if game_over:
+    keys = pygame.key.get_pressed()
+
+    # ---------- START MENU ----------
+    if game_state == "start":
         screen.fill((0, 0, 0))
-        over_text = font.render("GAME OVER!", True, (255, 0, 0))
-        restart_text = font.render("Press R to Restart", True, (255, 255, 255))
-        screen.blit(over_text, (WIDTH // 2 - 100, HEIGHT // 2 - 20))
-        screen.blit(restart_text, (WIDTH // 2 - 130, HEIGHT // 2 + 20))
+        title = font.render("MARIO PYTHON EDITION", True, (255, 255, 255))
+        start_text = small_font.render("Press ENTER to Start", True, (255, 255, 255))
+        screen.blit(title, (WIDTH//2 - 200, HEIGHT//2 - 60))
+        screen.blit(start_text, (WIDTH//2 - 150, HEIGHT//2 + 10))
         pygame.display.update()
 
-        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RETURN]:
+            game_state = "play"
+
+        continue
+
+    # ---------- GAME OVER SCREEN ----------
+    if game_state == "game_over":
+        screen.fill((0, 0, 0))
+        over_text = font.render("GAME OVER!", True, (255, 0, 0))
+        restart_text = small_font.render("Press R to Restart", True, (255, 255, 255))
+        screen.blit(over_text, (WIDTH//2 - 100, HEIGHT//2 - 20))
+        screen.blit(restart_text, (WIDTH//2 - 140, HEIGHT//2 + 40))
+        pygame.display.update()
+
         if keys[pygame.K_r]:
-            # Reset full game
+            # Reset
             player_x = 100
             player_y = 500
             score = 0
             lives = 3
             camera_x = 0
-            coins = [
-                pygame.Rect(250, 400, 20, 20),
-                pygame.Rect(550, 300, 20, 20),
-                pygame.Rect(950, 250, 20, 20),
-                pygame.Rect(1350, 350, 20, 20),
-                pygame.Rect(1750, 300, 20, 20)
+            mushrooms = [pygame.Rect(750, 520, 30, 30)]
+            stars = [pygame.Rect(1500, 520, 30, 30)]
+            enemies = [
+                [600, 520, 2, 1],
+                [1100, 520, 2, -1],
+                [1600, 520, 3, 1]
             ]
-            game_over = False
+            game_state = "start"
+
         continue
 
-    keys = pygame.key.get_pressed()
+    # ---------- PLAY STATE ----------
     moving = False
 
-    # Movement
     if keys[pygame.K_LEFT]:
         player_x -= player_speed
         moving = True
@@ -128,7 +157,6 @@ while True:
         player_x += player_speed
         moving = True
 
-    # Jump
     if keys[pygame.K_SPACE] and not is_jumping:
         player_y_velocity = -10
         is_jumping = True
@@ -146,21 +174,20 @@ while True:
         player_y_velocity = 0
         is_jumping = False
 
-    # ---------- Moving Platforms ----------
+    # -------- Platforms --------
     for p in platforms:
         p[0] += p[4] * p[5]
         if p[0] < p[6] or p[0] > p[7]:
             p[5] *= -1
 
         platform_rect = pygame.Rect(p[0], p[1], p[2], p[3])
-
         if player_rect.colliderect(platform_rect) and player_y_velocity > 0:
             player_y = p[1] - player_height
             player_y_velocity = 0
             is_jumping = False
             player_x += p[4] * p[5]
 
-    # ---------- Animation ----------
+    # Animation
     if moving:
         frame_delay += 1
         if frame_delay >= 5:
@@ -169,8 +196,8 @@ while True:
     else:
         current_frame = 0
 
-    # ---------- Enemies ----------
-    for enemy in enemies:
+    # -------- Enemies --------
+    for enemy in enemies[:]:
         enemy[0] += enemy[2] * enemy[3]
         if enemy[0] < 550:
             enemy[3] = 1
@@ -180,74 +207,107 @@ while True:
         enemy_rect = pygame.Rect(enemy[0], enemy[1], enemy_width, enemy_height)
 
         if player_rect.colliderect(enemy_rect):
-            lives -= 1
-            game_over_sound.play()
-            pygame.time.delay(700)
+            if invincible:
+                enemies.remove(enemy)
+            elif mario_big:
+                bottom = player_y + player_height
+                mario_big = False
+                player_width = 40
+                player_height = 60
+                mario_frames = [
+                    pygame.transform.scale(pygame.image.load("mario1.png"), (player_width, player_height)),
+                    pygame.transform.scale(pygame.image.load("mario2.png"), (player_width, player_height)),
+                    pygame.transform.scale(pygame.image.load("mario3.png"), (player_width, player_height))
+                ]
+                player_y = bottom - player_height
+            else:
+                lives -= 1
+                game_over_sound.play()
+                pygame.time.delay(700)
+                player_x = 100
+                player_y = 500
+                camera_x = 0
+                if lives <= 0:
+                    game_state = "game_over"
 
-            player_x = 100
-            player_y = 500
-            player_y_velocity = 0
-            camera_x = 0  # FIX: reset camera!
-
-            if lives <= 0:
-                game_over = True
-
-    # ---------- Coins ----------
+    # Coins
     for coin in coins[:]:
         if player_rect.colliderect(coin):
             coins.remove(coin)
             score += 1
             coin_sound.play()
 
-    # ---------- Win ----------
+    # -------- Mushroom --------
+    for mush in mushrooms[:]:
+        if player_rect.colliderect(mush):
+            mushrooms.remove(mush)
+
+            bottom = player_y + player_height
+            mario_big = True
+            player_width = 50
+            player_height = 80
+            mario_frames = [
+                pygame.transform.scale(pygame.image.load("mario1.png"), (player_width, player_height)),
+                pygame.transform.scale(pygame.image.load("mario2.png"), (player_width, player_height)),
+                pygame.transform.scale(pygame.image.load("mario3.png"), (player_width, player_height))
+            ]
+            player_y = bottom - player_height
+
+    # -------- Star --------
+    for star in stars[:]:
+        if player_rect.colliderect(star):
+            stars.remove(star)
+            invincible = True
+            invincible_timer = pygame.time.get_ticks()
+
+    if invincible and pygame.time.get_ticks() - invincible_timer > 5000:
+        invincible = False
+
+    # Win
     if player_rect.colliderect(flag_rect):
         won = True
 
     if won:
-        screen.fill((255, 255, 255))
-        win_text = font.render("YOU WIN!", True, (0, 0, 0))
-        screen.blit(win_text, (WIDTH // 2 - 80, HEIGHT // 2))
+        screen.fill((255,255,255))
+        win_text = font.render("YOU WIN!", True, (0,0,0))
+        screen.blit(win_text, (WIDTH//2 - 80, HEIGHT//2))
         pygame.display.update()
-        pygame.time.delay(3000)
-        pygame.quit()
-        sys.exit()
+        pygame.time.delay(2500)
+        game_state = "start"
+        won = False
 
-    # ---------- Camera scrolling ----------
-    if player_x - camera_x > WIDTH // 2:
-        camera_x = player_x - WIDTH // 2
+    # Camera scroll
+    if player_x - camera_x > WIDTH//2:
+        camera_x = player_x - WIDTH//2
 
-    # ---------- DRAWING ----------
-    screen.fill((135, 206, 235))  # sky
+    # -------- DRAWING --------
+    screen.fill((135, 206, 235))
+    pygame.draw.circle(screen, (255,255,0), (100-camera_x//10, 100), 40)
 
-    pygame.draw.circle(screen, (255, 255, 0), (100 - camera_x // 10, 100), 40)
-
-    screen.blit(mario_frames[current_frame], (player_x - camera_x, player_y))
-
-    pygame.draw.rect(screen, (0, 255, 0),
-                     (ground_rect.x - camera_x, ground_rect.y, ground_rect.width, ground_rect.height))
+    screen.blit(mario_frames[current_frame], (player_x-camera_x, player_y))
+    pygame.draw.rect(screen, (0,255,0), (ground_rect.x-camera_x, ground_rect.y, ground_rect.width, ground_rect.height))
 
     for p in platforms:
-        pygame.draw.rect(screen, (139, 69, 19),
-                         (p[0] - camera_x, p[1], p[2], p[3]))
+        pygame.draw.rect(screen, (139,69,19), (p[0]-camera_x, p[1], p[2], p[3]))
 
     for enemy in enemies:
-        pygame.draw.rect(screen, (255, 255, 0),
-                         (enemy[0] - camera_x, enemy[1], enemy_width, enemy_height))
+        screen.blit(goomba_img, (enemy[0]-camera_x, enemy[1]))
 
     for coin in coins:
-        pygame.draw.circle(screen, (255, 215, 0),
-                           (coin.x - camera_x + 10, coin.y + 10), 10)
+        pygame.draw.circle(screen, (255,215,0), (coin.x-camera_x+10, coin.y+10), 10)
 
-    pygame.draw.rect(screen, (255, 0, 0),
-                     (flag_rect.x - camera_x, flag_rect.y, flag_rect.width, flag_rect.height))
-    pygame.draw.circle(screen, (255, 255, 255),
-                       (flag_rect.x - camera_x + 15, flag_rect.y), 15)
+    for mush in mushrooms:
+        screen.blit(mushroom_img, (mush.x-camera_x, mush.y))
 
-    score_text = font.render(f"Score: {score}", True, (0, 0, 0))
+    pygame.draw.rect(screen, (255,255,0), (stars[0].x-camera_x, stars[0].y, stars[0].width, stars[0].height)) if stars else None
+
+    pygame.draw.rect(screen, (255,0,0), (flag_rect.x-camera_x, flag_rect.y, flag_rect.width, flag_rect.height))
+
+    score_text = small_font.render(f"Score: {score}", True, (0,0,0))
     screen.blit(score_text, (20, 20))
 
     for i in range(lives):
-        screen.blit(heart_img, (20 + i * 35, 60))
+        screen.blit(heart_img, (20 + i*35, 60))
 
     pygame.display.update()
     clock.tick(60)
