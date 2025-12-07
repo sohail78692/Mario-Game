@@ -1,23 +1,23 @@
 # 🎮 Mario Python Edition — 2D Platformer Game
 
-![Mario](./mario1.png)
+<img src="./mario1.png" width="180"/>
 
-A custom **Mario-style 2D Platformer Game** built using **Python** and **Pygame**, developed inside **VS Code**. Includes animated characters, enemies, power-ups, scoring, and menu screens.
+A custom **Mario-style 2D Platformer Game** built using **Python** and **Pygame**, developed inside **VS Code**. Includes animated characters, enemies, power‑ups, scoring, and menu screens.
 
 ---
 
 ## 🚀 Features
 
 * 🕹 Smooth 2D platformer movement
-* 🍄 Mushroom power-up (Mario grows bigger)
-* ⭐ Star power-up (invincibility)
+* 🍄 Mushroom power‑up (Mario grows bigger)
+* ⭐ Star power‑up (invincibility)
 * 🪙 Collectible coins & score system
 * 💔 Lives system with heart icons
 * 🐢 Goomba enemies
 * 🧱 Moving platforms
 * 🏁 Start + Game Over restart screen
 * 🎵 Sound effects (jump / coin / death)
-* 🎨 Sprite-based character animation
+* 🎨 Sprite‑based character animation
 
 ---
 
@@ -25,19 +25,19 @@ A custom **Mario-style 2D Platformer Game** built using **Python** and **Pygame*
 
 ### ▶ Character Movement
 
-![Mario Running](./mario2.png)
+<img src="./mario2.png" width="180"/>
 
 ### 🐢 Enemy
 
-![Goomba](./goomba.png)
+<img src="./goomba.png" width="180"/>
 
-### 🍄 Power-Up
+### 🍄 Power‑Up
 
-![Mushroom](./mushroom.png)
+<img src="./mushroom.png" width="180"/>
 
 ### ❤️ Lives
 
-![Heart](./heart.png)
+<img src="./heart.png" width="180"/>
 
 ---
 
