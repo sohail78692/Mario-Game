@@ -25,6 +25,11 @@ is_jumping = False
 mario_img = pygame.image.load("mario.png")
 mario_img = pygame.transform.scale(mario_img, (player_width, player_height))
 
+# Load  Sound Effects
+jump_sound = pygame.mixer.Sound("jump.mp3")
+coin_sound = pygame.mixer.Sound("coin.mp3")
+game_over_sound = pygame.mixer.Sound("gameover.mp3")
+
 # Camera offset
 camera_x = 0
 
@@ -78,12 +83,12 @@ while True:
     if keys[pygame.K_SPACE] and not is_jumping:
         player_y_velocity = -10
         is_jumping = True
+        jump_sound.play()
 
     # Gravity
     player_y_velocity += gravity
     player_y += player_y_velocity
 
-    # Player rectangle
     player_rect = pygame.Rect(player_x, player_y, player_width, player_height)
 
     # Ground collision
@@ -103,35 +108,34 @@ while True:
     enemy_x += enemy_speed * enemy_direction
     if enemy_x < 550 or enemy_x > 750:
         enemy_direction *= -1
-
     enemy_rect.x = enemy_x
     enemy_rect.y = enemy_y
 
     # Collision with enemy
     if player_rect.colliderect(enemy_rect):
+        game_over_sound.play()
+        pygame.time.delay(1000)
         print("Game Over!")
         pygame.quit()
         sys.exit()
 
-    # Coin collision
+    # Coin collection
     for coin in coins[:]:
         if player_rect.colliderect(coin):
             coins.remove(coin)
             score += 1
+            coin_sound.play()
 
-    # Camera scrolling
+    # Camera scroll
     if player_x - camera_x > WIDTH // 2:
         camera_x = player_x - WIDTH // 2
 
-    # -----------------------------------
-    # -------- DRAWING SECTION ----------
-    # -----------------------------------
-    screen.fill((135, 206, 235))  # Sky
+    # Drawing
+    screen.fill((135, 206, 235))
 
-    # Background art (parallax scrolling)
-    pygame.draw.circle(screen, (255, 255, 0), (100 - camera_x // 10, 100), 40)  # Sun
+    # Background art
+    pygame.draw.circle(screen, (255, 255, 0), (100 - camera_x // 10, 100), 40)
 
-    # Clouds
     pygame.draw.circle(screen, (255, 255, 255), (300 - camera_x // 5, 120), 30)
     pygame.draw.circle(screen, (255, 255, 255), (330 - camera_x // 5, 130), 25)
     pygame.draw.circle(screen, (255, 255, 255), (360 - camera_x // 5, 120), 30)
@@ -140,28 +144,20 @@ while True:
     pygame.draw.circle(screen, (255, 255, 255), (740 - camera_x // 5, 150), 25)
     pygame.draw.circle(screen, (255, 255, 255), (780 - camera_x // 5, 160), 30)
 
-    # Hills
     pygame.draw.ellipse(screen, (34, 139, 34), (100 - camera_x // 2, 450, 300, 200))
     pygame.draw.ellipse(screen, (34, 139, 34), (600 - camera_x // 2, 470, 400, 250))
 
-    # Mario sprite
     screen.blit(mario_img, (player_x - camera_x, player_y))
 
-    # Ground
     pygame.draw.rect(screen, (0, 255, 0), (ground_rect.x - camera_x, ground_rect.y, ground_rect.width, ground_rect.height))
-
-    # Platforms
     for platform in platforms:
         pygame.draw.rect(screen, (139, 69, 19), (platform.x - camera_x, platform.y, platform.width, platform.height))
 
-    # Enemy
     pygame.draw.rect(screen, (255, 255, 0), (enemy_rect.x - camera_x, enemy_rect.y, enemy_rect.width, enemy_rect.height))
 
-    # Coins
     for coin in coins:
         pygame.draw.circle(screen, (255, 215, 0), (coin.x - camera_x + 10, coin.y + 10), 10)
 
-    # Score display
     score_text = font.render(f"Score: {score}", True, (0, 0, 0))
     screen.blit(score_text, (20, 20))
 
