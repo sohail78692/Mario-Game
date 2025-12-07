@@ -21,15 +21,15 @@ player_y_velocity = 0
 gravity = 0.5
 is_jumping = False
 
-# Camera offset
-camera_x = 0
-
 # Load Mario sprite
 mario_img = pygame.image.load("mario.png")
 mario_img = pygame.transform.scale(mario_img, (player_width, player_height))
 
-# Ground and platforms in world coordinates
-ground_rect = pygame.Rect(0, 560, 3000, 40)  # long ground (3000px)
+# Camera offset
+camera_x = 0
+
+# Ground & platforms in world space
+ground_rect = pygame.Rect(0, 560, 3000, 40)
 
 platforms = [
     pygame.Rect(200, 450, 120, 20),
@@ -39,7 +39,16 @@ platforms = [
     pygame.Rect(1700, 350, 120, 20)
 ]
 
-# Game Loop
+# Enemy setup
+enemy_width = 40
+enemy_height = 40
+enemy_x = 600
+enemy_y = 520
+enemy_speed = 2
+enemy_direction = 1
+enemy_rect = pygame.Rect(enemy_x, enemy_y, enemy_width, enemy_height)
+
+# Game loop
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -59,11 +68,11 @@ while True:
         player_y_velocity = -10
         is_jumping = True
 
-    # Apply gravity
+    # Gravity
     player_y_velocity += gravity
     player_y += player_y_velocity
 
-    # Player collision rectangle
+    # Player rect
     player_rect = pygame.Rect(player_x, player_y, player_width, player_height)
 
     # Collision with ground
@@ -79,22 +88,41 @@ while True:
             player_y_velocity = 0
             is_jumping = False
 
-    # ---- Camera movement logic ----
-    # Keep Mario near center of screen
+    # Enemy movement
+    enemy_x += enemy_speed * enemy_direction
+    if enemy_x < 550 or enemy_x > 750:
+        enemy_direction *= -1
+
+    enemy_rect.x = enemy_x
+    enemy_rect.y = enemy_y
+
+    # Collision with enemy
+    if player_rect.colliderect(enemy_rect):
+        print("Game Over!")
+        pygame.quit()
+        sys.exit()
+
+    # Camera movement (scroll world)
     if player_x - camera_x > WIDTH // 2:
         camera_x = player_x - WIDTH // 2
 
-    # Draw everything
-    screen.fill((135, 206, 235))  # sky blue background
+    # Drawing
+    screen.fill((135, 206, 235))  # sky
 
-    # Draw Mario (adjusted by camera)
-    screen.blit(mario_img, (player_x - camera_x, player_y))
+    screen.blit(mario_img, (player_x - camera_x, player_y))  # Mario
 
-    # Draw ground & platforms relative to camera
-    pygame.draw.rect(screen, (0, 255, 0), (ground_rect.x - camera_x, ground_rect.y, ground_rect.width, ground_rect.height))
+    # Ground
+    pygame.draw.rect(screen, (0, 255, 0),
+                     (ground_rect.x - camera_x, ground_rect.y, ground_rect.width, ground_rect.height))
 
+    # Platforms
     for platform in platforms:
-        pygame.draw.rect(screen, (139, 69, 19), (platform.x - camera_x, platform.y, platform.width, platform.height))
+        pygame.draw.rect(screen, (139, 69, 19),
+                         (platform.x - camera_x, platform.y, platform.width, platform.height))
+
+    # Draw Enemy
+    pygame.draw.rect(screen, (255, 255, 0),
+                     (enemy_rect.x - camera_x, enemy_rect.y, enemy_rect.width, enemy_rect.height))
 
     pygame.display.update()
     clock.tick(60)
