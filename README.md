@@ -138,4 +138,4 @@ If you like this project, star the repo ⭐ and share with others!
 
 ### 👨‍💻 Author
 
-**Sohail Akhtar** — *Made with ❤️ using Python & Pygame*
+**Sohail Akhtar** — *Made with ❤️ using Python & Pygame.*
